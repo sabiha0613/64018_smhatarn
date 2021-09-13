@@ -1,0 +1,18 @@
+﻿id,media,Preference,Category,Audience_Size
+s1,Times Of india,1,Newspaper,23
+s2,Hindustan Times,1,Newspaper,67
+s3,Mumbai Mirror,1,Newspaper,43
+s4,Lokmat,1,Newspaper,32
+s5,The Economic Times,1,Newspaper,11
+s6,Mid Day,1,Newspaper,54
+s7,Star News,2,Television,34
+s8,Zee News,2,Television,23
+s9,NDTV,2,Television,46
+s10,Aaj Tak,2,Television,22
+s11,India TV,2,Television,39
+s12,yahoo.com,3,Online,44
+s13,ndtv.com,3,Online,17
+s14,timesofIndia.com,3,Online,63
+s15,news.google.com,3,Online,54
+s16,Indiatimes.com,3,Online,49
+s17,aajtak.in,3,Online,50
