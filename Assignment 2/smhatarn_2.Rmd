@@ -1,0 +1,111 @@
+---
+title: "Assignment 2"
+author: "SABIHA MHATARNAIK"
+date: "10/2/2021"
+output: pdf_document
+---
+#Install lpSolveAPI package if not installed
+```{r}
+#install.packages("lpSolveAPI")
+```
+
+```{r}
+#Now, load the library
+library(lpSolveAPI)
+
+#create an lp object named 'lprec' with 0 constraints and 9 decision variables
+lprec <- make.lp(0,9)
+
+#Now create the objective function. The default is a minimization problem.
+set.objfn(lprec, c(420,420,420,
+                   360,360,360,
+                   300,300,300))
+
+# As the default is a minimization problem, we change the direction to set maximization
+lp.control(lprec,sense='max')
+
+#Add the 12 constraints based on the plant's number and products made on those plants.
+add.constraint(lprec ,c(1,0,0,1,0,0,1,0,0), "<=", 750)
+add.constraint(lprec ,c(0,1,0,0,1,0,0,1,0), "<=", 900)
+add.constraint(lprec ,c(0,0,1,0,0,1,0,0,1), "<=", 450)
+
+add.constraint(lprec ,c(20,0,0,15,0,0,12,0,0), "<=", 13000)
+add.constraint(lprec ,c(0,20,0,0,15,0,0,12,0), "<=", 12000)
+add.constraint(lprec ,c(0,0,20,0,0,15,0,0,12), "<=", 5000)
+
+add.constraint(lprec ,c(1,1,1,0,0,0,0,0,0), "<=", 900)
+add.constraint(lprec ,c(0,0,0,1,1,1,0,0,0), "<=", 1200)
+add.constraint(lprec ,c(0,0,0,0,0,0,1,1,1), "<=", 750)
+
+add.constraint(lprec ,c(900,-750,0,900,-750,0,900,-750,0), "=", 0)
+add.constraint(lprec ,c(0,450,-900,0,450,-900,0,450,-900), "=", 0)
+add.constraint(lprec,c(450,0,-750,450,0,-750,450,0,-750),"=",0)
+```
+Set bounds for variables.
+
+Remember that all variables had to be non-negative. We don't need to do it 
+here,as this is the default , we can set bounds explicitly.
+
+```{r}
+#Set bounds for variables.
+set.bounds(lprec ,lower =c(0,0,0,0,0,0,0,0,0),
+           columns= c (1:9))  #Not really needed
+
+# To identify  the variables and constraints, we can set variable names and constraint names.
+RowNames <-c("P1ProductionCapacity","P2ProductionCapacity","P3ProductionCapacity",
+             "P1StorageSpace","P2StorageSpace","P3StorageSpace",
+             "SalesForecastLarge","SalesForecastMedium","SalesForecastSmall",
+             "PercentCapacityP1andP2","PercentCapacityP2andP3","PercentCapacityP1andP3")
+
+ColNames <- c("Plant1Large","Plant2Large","Plant3Large",
+              "Plant1Medium","Plant2Medium","Plant3Medium",
+              "Plant1Small","Plant2Small","Plant3Small")
+
+dimnames(lprec)<- list (RowNames,ColNames)
+
+#Now view the Model
+lprec
+
+```
+
+```{r}
+# The model can also be saved to a file
+write.lp(lprec, filename = "weigelt.lp", type = "lp")
+```
+
+Now we can solve the above LP Problem
+```{r}
+solve(lprec)
+```
+The output above indicated that the answer is 0, means there was a successful solution.
+We now output the value of the objective function, and the variables.
+
+```{r}
+get.objective(lprec)
+get.variables(lprec)
+
+```
+From the above solution, we can infer the following :
+Plant 1 : 516.67 of Large Products and 177.78 of Medium Products.
+Plant 2 : 666.67 of Medium Products and 166.67 of Small products.
+Plant 3 : 416.67 of Small Products
+
+```{r}
+get.constraints(lprec)
+```
+
+We now read the lp formulation using an lp file.
+I am using the same R file which I have saved.
+
+```{r}
+
+a <- read.lp ("weigelt.lp")  # create an lp object a
+a                            #display a
+```
+
+Solve the lp model
+```{r}
+solve(a)                     #get objective value
+get.objective(a)             #get values of decision variables
+get.constraints(a)           #get constraint values
+```
