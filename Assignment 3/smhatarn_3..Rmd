@@ -1,0 +1,217 @@
+---
+title: "Assignment 3"
+author: "SABIHA MHATARNAIK"
+date: "10/11/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+Q1. Solve the problem using lpSolve or any other equivalent library in R.
+#Install lpSolveAPI package if not installed
+```{r}
+#install.packages("lpSolveAPI")
+```
+
+```{r}
+#Now, load the library
+library(lpSolveAPI)
+
+#create an lp object named 'lprec' with 0 constraints and 9 decision variables
+lprec <- make.lp(0,9)
+
+#Now create the objective function. The default is a minimization problem.
+set.objfn(lprec, c(420,420,420,
+                   360,360,360,
+                   300,300,300))
+
+# As the default is a minimization problem, we change the direction to set maximization
+lp.control(lprec,sense='max')
+
+#Add the 12 constraints based on the plant's number and products made on those plants.
+add.constraint(lprec ,c(1,0,0,1,0,0,1,0,0), "<=", 750)
+add.constraint(lprec ,c(0,1,0,0,1,0,0,1,0), "<=", 900)
+add.constraint(lprec ,c(0,0,1,0,0,1,0,0,1), "<=", 450)
+
+add.constraint(lprec ,c(20,0,0,15,0,0,12,0,0), "<=", 13000)
+add.constraint(lprec ,c(0,20,0,0,15,0,0,12,0), "<=", 12000)
+add.constraint(lprec ,c(0,0,20,0,0,15,0,0,12), "<=", 5000)
+
+add.constraint(lprec ,c(1,1,1,0,0,0,0,0,0), "<=", 900)
+add.constraint(lprec ,c(0,0,0,1,1,1,0,0,0), "<=", 1200)
+add.constraint(lprec ,c(0,0,0,0,0,0,1,1,1), "<=", 750)
+
+add.constraint(lprec ,c(900,-750,0,900,-750,0,900,-750,0), "=", 0)
+add.constraint(lprec ,c(0,450,-900,0,450,-900,0,450,-900), "=", 0)
+add.constraint(lprec,c(450,0,-750,450,0,-750,450,0,-750),"=",0)
+```
+Set bounds for variables.
+
+Remember that all variables had to be non-negative. We don't need to do it 
+here,as this is the default , we can set bounds explicitly.
+
+```{r}
+#Set bounds for variables.
+set.bounds(lprec ,lower =c(0,0,0,0,0,0,0,0,0),
+           columns= c (1:9))  #Not really needed
+
+# To identify  the variables and constraints, we can set variable names and constraint names.
+RowNames <-c("P1ProductionCapacity","P2ProductionCapacity","P3ProductionCapacity",
+             "P1StorageSpace","P2StorageSpace","P3StorageSpace",
+             "SalesForecastLarge","SalesForecastMedium","SalesForecastSmall",
+             "PercentCapacityP1andP2","PercentCapacityP2andP3","PercentCapacityP1andP3")
+
+ColNames <- c("Plant1Large","Plant2Large","Plant3Large",
+              "Plant1Medium","Plant2Medium","Plant3Medium",
+              "Plant1Small","Plant2Small","Plant3Small")
+
+dimnames(lprec)<- list (RowNames,ColNames)
+
+#Now view the Model
+lprec
+
+```
+
+```{r}
+# The model can also be saved to a file
+write.lp(lprec, filename = "weigelt.lp", type = "lp")
+```
+
+Now we can solve the above LP Problem
+```{r}
+solve(lprec)
+```
+The output above indicated that the answer is 0, means there was a successful solution.
+We now output the value of the objective function, and the variables.
+
+```{r}
+get.objective(lprec)
+get.variables(lprec)
+
+```
+From the above solution, we can infer the following :
+Plant 1 : 516.67 of Large Products and 177.78 of Medium Products.
+Plant 2 : 666.67 of Medium Products and 166.67 of Small products.
+Plant 3 : 416.67 of Small Products
+
+```{r}
+get.constraints(lprec)
+```
+
+We now read the lp formulation using an lp file.
+I am using the same R file which I have saved.
+
+```{r}
+
+a <- read.lp ("weigelt.lp")  # create an lp object a
+a                            #display a
+```
+
+Solve the lp model
+```{r}
+solve(a)                     #get objective value
+get.objective(a)             #get values of decision variables
+get.constraints(a)           #get constraint values
+get.variables(lprec)
+```
+
+Q2. Identify the shadow prices,dual solution and reduced costs.
+```{r}
+get.sensitivity.rhs(lprec) # get Shadow Prices
+```
+Note that the shadow prices are expressed here under $duals.
+We also have valid ranges for shadow price calculations. Those are given under $dualsfrom and $dualstill.
+
+```{r}
+get.sensitivity.obj(lprec) # get Reduced Costs
+```
+The reduced costs are expressed here until $objfrom and $objtill.
+
+Dual solution
+```{r}
+get.dual.solution(lprec )   #get dual Solution
+```
+
+Q3. Further,identify the sensitivity of the above prices and costs.That is,specify the range of shadow prices and reduced cost within which the optimal solution will not change
+
+```{r}
+cbind( price=get.sensitivity.rhs(lprec)$duals[1:11],lowerRange=get.sensitivity.rhs(lprec)$dualsfrom[1:11],upperRange=get.sensitivity.rhs(lprec)$dualstill[1:11])
+
+cbind( cost=get.sensitivity.rhs(lprec)$duals[12:21],lowerRange=get.sensitivity.rhs(lprec)$dualsfrom[12:21],upperRange=get.sensitivity.rhs(lprec)$dualstill[12:21])
+```
+The shadow prices are expressed here comprising of $dualsfrom and $dualstill.
+The above is the range specified for the shadow prices within which the optimal solution will not change.
+
+```{r}
+cbind(get.sensitivity.obj(lprec)$duals[1:9],lowerRange=get.sensitivity.obj(lprec)$objfrom[1:9],upperRange=get.sensitivity.obj(lprec)$objtill[1:9])
+```
+The reduced costs are expressed here until $objfrom and $objtill.
+The above is the range specified for the reduced cost within which the optimal solution will not change.
+
+
+```{r}
+get.sensitivity.rhs(lprec)$duals
+```
+
+Q4. Formulation of the dual of the above problem 
+```{r}
+lpDual <- make.lp(0,12)
+```
+
+```{r}
+set.objfn(lpDual, c(750,900,450,
+                   13000,12000,5000,
+                   900,1200,750,
+                   0,0,0))
+```
+
+```{r}
+lp.control(lpDual,sense='min',simplextype="dual")
+add.constraint(lpDual ,c(1,0,0,20,0,0,1,0,0,900,0,450), ">=", 420)
+add.constraint(lpDual ,c(0,1,0,0,20,0,1,0,0,-750,450,0), ">=", 420)
+add.constraint(lpDual ,c(0,0,1,0,0,20,1,0,0,0,-900,-750), ">=", 420)
+
+add.constraint(lpDual ,c(1,0,0,15,0,0,0,1,0,900,0,450), ">=", 360)
+add.constraint(lpDual ,c(0,1,0,0,15,0,0,1,0,-750,450,0), ">=", 360)
+add.constraint(lpDual ,c(0,0,1,0,0,15,0,1,0,0,-900,-750), ">=", 360)
+
+add.constraint(lpDual ,c(1,0,0,12,0,0,0,0,1,900,0,450), ">=", 300)
+add.constraint(lpDual ,c(0,1,0,0,12,0,0,0,1,-750,450,0), ">=", 300)
+add.constraint(lpDual ,c(0,0,1,0,0,12,0,0,1,0,-900,-750), ">=", 300)
+```
+
+We now read the lp formulation using an lp file
+```{r}
+lpDual <- read.lp("dual.lp") #Create an lp object lpDual
+lpDual                     #Display lpDual
+```
+
+Solve the lp model
+```{r}
+solve(lpDual)                     #get objective value
+get.objective(lpDual)             #get values of decision variables
+get.variables(lpDual)
+get.constraints(lpDual)           #get constraint values
+get.sensitivity.rhs(lpDual)       #get shadow price
+get.sensitivity.obj(lpDual)       #get reduced cost
+get.dual.solution(lpDual)         #get dual solution
+
+```
+
+Specifying the range
+
+```{r}
+cbind( get.sensitivity.rhs(lpDual)$duals[1:21],lowerRange=get.sensitivity.rhs(lpDual)$dualsfrom[1:21],upperRange=get.sensitivity.rhs(lpDual)$dualstill[1:21])
+```
+The shadow prices are expressed here comprising of $dualsfrom and $dualstill.
+The above is the range specified for the shadow prices within which the optimal solution will not change.
+
+```{r}
+cbind(get.sensitivity.obj(lpDual)$duals[1:12],lowerRange=get.sensitivity.obj(lpDual)$objfrom[1:12],upperRange=get.sensitivity.obj(lpDual)$objtill[1:12])
+```
+The reduced costs are expressed here until $objfrom and $objtill.
+The above is the range specified for the reduced cost within which the optimal solution will not change.
+
+The Formulation of dual yields results that agree with primal solution.
+
