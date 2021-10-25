@@ -1,0 +1,227 @@
+---
+title: "Assignment 4"
+author: "SABIHA MHATARNAIK"
+date: "10/23/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Q.1)
+***Solving this transportation problem utilizing R***
+
+
+**Adding the LP Objective function and constraint**
+
+We will be using "lpSolveAPI" package in R
+```{r}
+#Import the lpSolveAPI package
+library(lpSolveAPI)
+```
+
+```{r}
+#Creating an lp object named lptrans with 0 constraints and 6 decision variables.
+lptrans <- make.lp(0,6)
+
+#Set the objective function.Since,minimization problem is the default so we don't 
+#have to change the direction.
+set.objfn(lptrans, c(622,614,630,
+                     641,645,649))
+
+#Add the 9 constraints based on the number of units made on each plant and 
+#shipped to different warehouses.
+
+add.constraint(lptrans, c(1,1,1,0,0,0), "<=", 100)
+add.constraint(lptrans, c(0,0,0,1,1,1), "<=", 120)
+
+add.constraint(lptrans, c(1,0,0,1,0,0), "=", 80)
+add.constraint(lptrans, c(0,1,0,0,1,0), "=", 60)
+add.constraint(lptrans, c(0,0,1,0,0,1), "=", 70)
+```
+
+Setting the bounds for the variables.
+Also, it is important to note that all variables have to be non-negative.
+There is no need to do this as this is by default,but we can set the bounds explicitly.
+
+```{r}
+#Set bounds for variables.
+set.bounds(lptrans ,lower =c(0,0,0,0,0,0),
+           columns= c(1:6)) # not really needed
+
+#To identify the variables and constraints, we can
+# set variable names and name the constraints
+RowNames <- c ("PrdtnCapPlantA" ,"PrdctnCapPlantB",
+               "DemandWh1","DemandWh2","DemandWh3")
+
+ColNames <- c("PlantAWh1","PlantAWh2","PlantAWh3",
+              "PlantBWh1","PlantBWh2","PlantBWh3")
+
+dimnames(lptrans) <- list(RowNames,ColNames)
+
+#Now print out the model 
+lptrans
+```
+```{r}
+#Saving to a file
+write.lp(lptrans,filename="AED.lp",type="lp")
+```
+**Now solve the lp problem**
+```{r}
+solve(lptrans)
+```
+The output above indicate that the result is 0, means that there was a successful solution
+We now output the value of the objective function, and the variables.
+
+```{r}
+#It will give us the minimum value for the optimal solution.
+get.objective(lptrans)
+```
+Hence $132790 is the minimum combined cost of production and shipping for the optimal solution.
+
+```{r}
+#It will give us the optimal number of units produced on each plant and shipped to each warehouse.
+get.variables(lptrans)
+```
+In order to get the minimum combined cost of production and shipping each plant should produce and ship the following amounts:
+Plant A should produce 100 units. the company should ship 60 units of plant A to warehouse 2 and 40 units to warehouse 3.
+Plant B should produce 110 units .The company should ship 80 units of plant B to warehouse 1 and 30 units
+to warehouse 3
+
+```{r}
+#It will give us the optimal constraints
+get.constraints(lptrans)
+```
+
+This output is important that shows the correct values in order to satisfy the equality assumption.The
+equality assumption in a transportation problem says that the given problem will have a feasible solution iff total production= total demand.
+Hence, the constraints on plant B must be reduced from 120 to 110 to have a feasible solution.
+
+```{r}
+get.sensitivity.obj(lptrans) #get Reduced Costs
+```
+
+```{r}
+get.sensitivity.rhs(lptrans) #get Shadow Price
+```
+
+**Dummy Variable Approach**
+
+```{r}
+#Creating an lp object named lptrans with 0 constraints and 8 decision variables.
+lptrans_dummy<- make.lp(0,8)
+
+#Set the objective function.Since,minimization problem is the default so we don't 
+#have to change the direction.
+set.objfn(lptrans_dummy, c(622,614,630,0,
+                     641,645,649,0))
+```
+
+Add the 8 constraints based on the number of units made on each plant and 
+shipped to different warehouses and the dummy variable that is needed which will be a dummy warehouse 4
+to satisfy the equality assumption i.e total production = total demand.
+```{r}
+add.constraint(lptrans_dummy, c(1,1,1,1,0,0,0,0), "=", 100)
+add.constraint(lptrans_dummy, c(0,0,0,0,1,1,1,1), "=", 120)
+
+add.constraint(lptrans_dummy, c(1,0,0,0,1,0,0,0), "=", 80)
+add.constraint(lptrans_dummy, c(0,1,0,0,0,1,0,0), "=", 60)
+add.constraint(lptrans_dummy, c(0,0,1,0,0,0,1,0), "=", 70)
+add.constraint(lptrans_dummy, c(0,0,0,1,0,0,0,1), "=", 10) #Dummy Variable
+
+#Set bounds for variables.
+set.bounds(lptrans_dummy ,lower =c(0,0,0,0,0,0,0,0),
+           columns= c(1:8)) # not really needed
+
+#To identify the variables and constraints, we can
+# set variable names and name the constraints
+RowNames_dummy <- c ("PrdtnCapPltA" ,"PrdctnCapPltB",
+               "DemandWh1","DemandWh2","DemandWh3","DemandWh4")
+
+ColNames_dummy <- c("PltAWh1","PltAWh2","PltAWh3","PltAWh4",
+              "PltBWh1","PltBWh2","PltBWh3","PltBWh4")
+
+dimnames(lptrans_dummy) <- list(RowNames_dummy,ColNames_dummy)
+
+#Now print out the model 
+lptrans_dummy
+```
+```{r}
+#Solve the transportation problem 
+solve(lptrans_dummy)
+```
+The output above indicate that the result is 0, means that there was a successful solution.
+
+```{r}
+#It will give us the minimum value for the optimal solution.
+get.objective(lptrans_dummy)
+```
+
+Same optimal solution as that of the previous approach
+
+```{r}
+#It will give us the optimal number of units produced on each plant and shipped to each warehouse.
+get.variables(lptrans_dummy)
+```
+Here, the additional 10 units are logically sent to warehouse 4,which is needed to satisfy th equality assumption.Warehouse 4 is not a physical location, but it means 10 units must be shipped to any warehouse to get a feasible solution.
+
+```{r}
+#It will give us the optimal constraints
+get.constraints(lptrans_dummy)
+```
+Here, all constraints are satisfied.
+
+```{r}
+get.sensitivity.obj(lptrans_dummy) # Reduced Cost
+```
+```{r}
+#It will give us the optimal constraints
+get.sensitivity.rhs(lptrans_dummy) # Shadow Price
+```
+***Also, we can read the lp formulation using an lp file and solve it.***
+```{r}
+x <- read.lp("AED.lp")
+x
+```
+
+```{r}
+solve(x)
+get.objective(x) #get the objective value
+get.variables(x) #get the values f decision variables
+get.constraints(x) #get constraints 
+```
+
+Q.2)
+***Oil Distribution***
+
+1) 
+
+***Solving this transportation problem utilizing R***
+
+```{r}
+#Creating an lp object named lptrans with 0 constraints and 27 decision variables.
+lptransship<-make.lp(0,27)
+lp.control(lptransship,sense='min')
+#Set the objective function.
+set.objfn(lptransship,c(1.52,1.60,1.40,1.70,1.63,1.55,1.45,1.57,1.30,5.15,5.12,5.32,5.69,5.47,6.16,6.13,6.05,6.25,5.63,6.12,6.17,5.80,5.71,5.87,0,0,0))
+#Adding the constraints
+add.constraint(lptransship,c(1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),"=",93)
+add.constraint(lptransship,c(0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),"=",88)
+add.constraint(lptransship,c(0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),"=",95)
+add.constraint(lptransship,c(0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),"=",30)
+add.constraint(lptransship,c(0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0),"=",57)
+add.constraint(lptransship,c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0),"=",48)
+add.constraint(lptransship,c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0),"=",91)
+add.constraint(lptransship,c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0),"=",48)
+add.constraint(lptransship,c(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1),"=",2)
+add.constraint(lptransship,c(1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0),"=",0)
+add.constraint(lptransship,c(0,1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0),"=",0)
+add.constraint(lptransship,c(0,0,1,0,0,1,0,0,1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1,0,0,-1),"=",0)
+
+solve(lptransship)
+get.objective(lptransship)
+get.constraints(lptransship)
+get.variables(lptransship)
+```
+
+
