@@ -1,0 +1,231 @@
+---
+title: "Assignment 6"
+author: "SABIHA MHATARNAIK"
+date: "11/21/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+***Question 1***
+
+Consider the following activity-on-arc project network, where the 12 arcs (arrows) represent the 12 activities (tasks) that must be performed to complete the project and the network displays the order in which the activities need to be performed. The number next to each arc (arrow) is the time required for the corresponding activity. Consider the problem of finding the longest path (the largest total time) through this network from start (node 1) to finish (node 9), since the longest path is the critical path. 
+
+***Solution:***
+
+**Objective Function**
+
+Maximize: 5$X_{12}$ + 3$X_{13}$ + 4$X_{24}$ + 2$X_{25}$ + 3$X_{35}$ + $X_{46}$ + 4$X_{47}$ + 6$X_{57}$ + 2$X_{58}$ + 5$X_{69}$ + 4$X_{79}$ + 7$X_{89}$
+Here ,$X_{ij}$ (i=Starting Node ,j=Ending node)
+
+**Starting Node**
+
+5$X_{12}$ + 3$X_{13}$ =1
+
+**Intermediate Node**
+
+5$X_{12}$ - 2$X_{25}$ - 4$X_{24}$ =0
+
+3$X_{13}$ - 3$X_{35}$ = 0
+
+4$X_{24}$ - $X_{46}$ - 4$X_{47}$ = 0
+
+3$X_{35}$ - 2$X_{25}$ - 2$X_{58}$ - 6$X_{57}$ = 0
+
+$X_{46}$ - 5$X_{69}$ = 0
+
+6$X_{57}$ - 4$X_{47}$ - 4$X_{24}$ =0
+
+2$X_{58}$ - 7$X_{89}$ = 0
+
+**Ending Node**
+
+7$X_{89}$ - 4$X_{79}$ - 5$X_{69}$ = 1
+
+```{r}
+library(lpSolveAPI)
+lprec <- make.lp(0,12)
+lp.control(lprec, sense="max")
+time <- c(5, 3, 4, 2, 3, 1, 4, 6, 2, 5, 4, 7) # objective function
+set.objfn(lprec, 1*time)
+set.type(lprec, 1:12, "binary") 
+add.constraint(lprec,c(1,1),"=",1,indices = c(1,2)) # starting node
+add.constraint(lprec,c(1,-1,-1),"=",0,indices = c(1,3,4)) # intermediate node
+add.constraint(lprec,c(1,-1),"=",0,indices = c(2,5))
+add.constraint(lprec,c(1,-1,-1),"=",0,indices = c(3,6,7))
+add.constraint(lprec,c(1,1,-1,-1),"=",0,indices = c(4,5,8,9))
+add.constraint(lprec,c(1, -1),"=",0,indices = c(6,10))
+add.constraint(lprec,c(1,1,-1),"=",0,indices = c(7,8,11))
+add.constraint(lprec,c(1,-1),"=",0,indices = c(9,12))
+add.constraint(lprec,c(1,1,1),"=",1,indices = c(10,11,12)) # Ending node
+solve(lprec)
+get.objective(lprec)
+get.variables(lprec)
+get.constraints(lprec)
+arc <- c("X12", "X13", "X24", "X25", "X35", "X46", "X47", "X57", "X58", "X69", "X79", "X89")
+var<-get.variables(lprec)
+output<-data.frame(arc,var)
+output
+```
+
+Also ,we can read the .lp file and solve the problem 
+```{r}
+x<- read.lp("BIP.lp")
+x
+```
+
+Solve Model
+```{r}
+solve(x)
+get.objective(x)
+get.variables(x)
+get.constraints(x)
+```
+
+***Question 2***
+
+Selecting an Investment Portfolio An investment manager wants to determine an opti- 
+mal portfolio for a wealthy client. The fund has $2.5 million to invest, and its objective is 
+to maximize total dollar return from both growth and dividends over the course of the 
+coming year. The client has researched eight high-tech companies and wants the portfolio 
+to consist of shares in these firms only. Three of the firms (S1 – S3) are primarily 
+software companies, three (H1–H3) are primarily hardware companies, and two (C1–C2) 
+are internet consulting companies. The client has stipulated that no more than 40 percent 
+of the investment be allocated to any one of these three sectors. To assure diversification, 
+at least $100,000 must be invested in each of the eight stocks. Moreover, the number of 
+shares invested in any stock must be a multiple of 1000. 
+ 
+The table gives estimates from the investment company’s database relating to these 
+stocks. These estimates include the price per share, the projected annual growth rate in the share 
+price, and the anticipated annual dividend payment per share. 
+ 
+ **1)** Determine the maximum return on the portfolio. What is the optimal number of shares to 
+buy for each of the stocks? What is the corresponding dollar amount invested in each 
+stock?  
+
+***Solution:***
+
+To determine the maximum return on the portfolio the objective function includes the price per share, the projected annual growth in the share price & the anticipated annual dividend payment per share .This can be expressed as follows :
+
+**Returns =(Price per share) * (Growth Rate) + (Dividend payment per share)**
+
+**Objective Function**
+
+Maximize, Z = $4 XS_1$ + $6.5 XS_2$ + $5.9 XS_3$ + $5.4 XH_1$ + $5.15 XH_2$ + $10 XH_3$ + $8.4 XC_1$ + $6.25 XC_2$ 
+
+Investment constraints,
+
+40 $XS_1$ + 50 $XS_2$ + 80 $XS_3$ + 60 $XH_1$ + 45 $XH_2$ + 60 $XH_3$ + 30 $XC_1$ + 25 $XC_2$ <= 2500000 
+
+Number of shares that are invested in stock should be a multiple of 1000. 
+
+1000 $X_{SI}$ >= 0 (I = 1,2,3)  
+1000 $X_{HI}$ >= 0 (I = 1,2,3)  
+1000 $X_{CI}$ >= 0 (I = 1,2) 
+
+Also, at least $100,000 must be invested in each of the eight stocks.
+
+40 $X_{S1}$ >= 100000; 
+
+50 $X_{S2}$ >= 100000; 
+
+80 $X_{S3}$ >= 100000; 
+
+60 $X_{H1}$ >= 100000; 
+
+45 $X_{H2}$ >= 100000; 
+
+60 $X_{H3}$ >= 100000; 
+
+30 $X_{C1}$ >= 100000; 
+
+25 $X_{C2}$ >= 100000 
+
+Also, no more than 40% of the investment should be allocated to these 3 sectors
+
+40 $X_{S1}$ + 50 $X_{S2}$ + 80 $X_{S3}$ <= 1000000
+
+60 $X_{H1}$ + 45 $X_{H2}$+ 60 $X_{H3}$ <= 1000000 
+
+30 $X_{C1}$ + 25 $X_{C2}$ <= 1000000  
+
+where $X_{SI}$, $X_{HI}$, $X_{CI}$ >= 0 are integers. 
+
+```{r}
+library(lpSolveAPI)
+lprec<-make.lp(0,8)
+lp.control(lprec,sense="max")
+set.objfn(lprec,c(4,6.5,5.9,5.4,5.15,10,8.4,6.25))
+set.type(lprec,c(1:8),type = "integer")
+add.constraint(lprec,c(40,50,80,60,45,60,30,25),"<=",2500000,indices = c(1:8))
+add.constraint(lprec,1000,">=",0,indices = 1)
+add.constraint(lprec,1000,">=",0,indices = 2)
+add.constraint(lprec,1000,">=",0,indices = 3)
+add.constraint(lprec,1000,">=",0,indices = 4)
+add.constraint(lprec,1000,">=",0,indices = 5)
+add.constraint(lprec,1000,">=",0,indices = 6)
+add.constraint(lprec,1000,">=",0,indices = 7)
+add.constraint(lprec,1000,">=",0,indices = 8)
+add.constraint(lprec,40,">=",100000,indices = 1)
+add.constraint(lprec,50,">=",100000,indices = 2)
+add.constraint(lprec,80,">=",100000,indices = 3)
+add.constraint(lprec,60,">=",100000,indices = 4)
+add.constraint(lprec,45,">=",100000,indices = 5)
+add.constraint(lprec,60,">=",100000,indices = 6)
+add.constraint(lprec,30,">=",100000,indices = 7)
+add.constraint(lprec,25,">=",100000,indices = 8)
+add.constraint(lprec,c(40,50,80),"<=",1000000,indices = c(1,2,3))
+add.constraint(lprec,c(60,45,60),"<=",1000000,indices = c(4,5,6))
+add.constraint(lprec,c(30,25),"<=",1000000,indices = c(7,8))
+solve(lprec)
+get.objective(lprec)
+get.variables(lprec)
+get.constraints(lprec)
+```
+Using lpsolve with integer restriction we get the objective function, maximum returns as 487145.2 and number of stocks are S1= 2500, S2= 6000, S3= 1250, H1= 1667, H2= 2223, H3= 13332, C1= 30000, C2= 4000.  
+
+The amount that is invested in each stock S1= 100000, S2= 300000, S3= 100000, H1= 100020, H2= 100035, H3= 799920, C1= 900000, C2= 100000. 
+
+
+**2)**	Compare the solution in which there is no integer restriction on the number of shares invested. By how much (in percentage terms) do the integer restrictions alter the value of the optimal objective function? By how much (in percentage terms) do they alter the optimal investment quantities? 
+
+***Solution:***
+
+```{r}
+library(lpSolveAPI)
+lprec<-make.lp(0,8)
+lp.control(lprec,sense="max")
+set.objfn(lprec,c(4,6.5,5.9,5.4,5.15,10,8.4,6.25))
+add.constraint(lprec,c(40,50,80,60,45,60,30,25),"<=",2500000,indices = c(1:8))
+add.constraint(lprec,1000,">=",0,indices = 1)
+add.constraint(lprec,1000,">=",0,indices = 2)
+add.constraint(lprec,1000,">=",0,indices = 3)
+add.constraint(lprec,1000,">=",0,indices = 4)
+add.constraint(lprec,1000,">=",0,indices = 5)
+add.constraint(lprec,1000,">=",0,indices = 6)
+add.constraint(lprec,1000,">=",0,indices = 7)
+add.constraint(lprec,1000,">=",0,indices = 8)
+add.constraint(lprec,40,">=",100000,indices = 1)
+add.constraint(lprec,50,">=",100000,indices = 2)
+add.constraint(lprec,80,">=",100000,indices = 3)
+add.constraint(lprec,60,">=",100000,indices = 4)
+add.constraint(lprec,45,">=",100000,indices = 5)
+add.constraint(lprec,60,">=",100000,indices = 6)
+add.constraint(lprec,30,">=",100000,indices = 7)
+add.constraint(lprec,25,">=",100000,indices = 8)
+add.constraint(lprec,c(40,50,80),"<=",1000000,indices = c(1,2,3))
+add.constraint(lprec,c(60,45,60),"<=",1000000,indices = c(4,5,6))
+add.constraint(lprec,c(30,25),"<=",1000000,indices = c(7,8))
+solve(lprec)
+get.objective(lprec)
+get.variables(lprec)
+get.constraints(lprec)
+```
+
+Using lpsolve without integer restriction we get the objective function, maximum returns as 487152.8 and number of stocks are S1= 2500.0, S2= 6000.0, S3= 1250.0, H1= 1666.667, H2= 2222.222, H3= 13333.333, C1= 30000.0, C2= 4000.0 
+
+The amount that is invested in each stock S1= 100000, S2= 300000, S3= 100000, H1= 100000, H2= 100000, H3= 800000, C1= 900000, C2= 100000.  
+
+The Percentage difference in objective functions with and without integer restriction is 0.00156 
+
